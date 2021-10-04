@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:10.14-alpine
+    container_name: db-postgres
+    environment:
+      POSTGRES_USER: db_admin
+      POSTGRES_PASSWORD: 123qwe
+      POSTGRES_DB: api
+    ports:
+      - 5444:5432
+    volumes:
+      - ./sql/postgres/db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ~/postgresdb:/var/lib/postgresql/data
+    
