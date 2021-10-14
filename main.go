@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"gotsnext/internal/helpers"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,15 +13,31 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localhost"
+	port     = 5444
+	user     = "db_admin"
+	password = "123qwe"
+	dbname   = "api"
 )
 
 func main() {
-	file, err := os.Open("a.txt")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("db conn error", err)
+	}
+	defer db.Close()
+	if err = db.Ping(); err != nil {
+		log.Fatalln("db ping error", err)
 	}
 
-	io.Copy(os.Stdout, file)
 	conf := fiber.Config{
 		ServerHeader: "go fiber",
 	}
@@ -101,6 +117,38 @@ func main() {
 		}
 
 		return c.JSON(res)
+	})
+
+	type User struct {
+		Username  string       `json:"username" form:"username"`
+		Email     string       `json:"email" form:"email"`
+		Password  string       `json:"password" form:"password"`
+		CreatedAt time.Time    `json:"created_at" form:"created_at"`
+		UpdatedAt time.Time    `json:"updated_at" form:"updated_at"`
+		DeletedAt sql.NullTime `json:"deleted_at" form:"deleted_at"`
+	}
+
+	app.Post("/user", func(c *fiber.Ctx) error {
+		var u *User = new(User)
+
+		if err := c.BodyParser(u); err != nil {
+			return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
+		}
+
+		u.CreatedAt = time.Now()
+		u.UpdatedAt = time.Now()
+
+		fmt.Printf("user: %+v", u)
+
+		stmt := "INSERT INTO users (username, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)"
+
+		res, err := db.Exec(stmt, u.Username, u.Email, u.Password, u.CreatedAt, u.UpdatedAt)
+		if err != nil {
+			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+		}
+
+		rows, _ := res.RowsAffected()
+		return c.SendString(fmt.Sprintf("user success inserted: %d", rows))
 	})
 
 	app.Static("/", "./assets")
