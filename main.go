@@ -193,22 +193,32 @@ func main() {
 
 		stmt := "SELECT * FROM users WHERE username = $1"
 
-		row := db.QueryRow(stmt, u.Username)
-		var user User
+		rows, err := db.Query(stmt, u.Username)
+		if err != nil {
+			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+		}
+		defer rows.Close()
 
-		err = row.Scan(
-			&user.Username,
-			&user.Email,
-			&user.Password,
-			&user.CreatedAt,
-			&user.UpdatedAt,
-			&user.DeletedAt,
-		)
+		var users []User
+
+		for rows.Next() {
+			var user User
+			rows.Scan(
+				&user.Username,
+				&user.Email,
+				&user.Password,
+				&user.CreatedAt,
+				&user.UpdatedAt,
+				&user.DeletedAt,
+			)
+			users = append(users, user)
+		}
+
 		if err != nil {
 			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
 		}
 
-		return c.JSON(user)
+		return c.JSON(users)
 
 	})
 
