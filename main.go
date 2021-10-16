@@ -178,6 +178,40 @@ func main() {
 		return c.SendString(fmt.Sprintf("user success updated: %d", rows))
 	})
 
+	type UserQuery struct {
+		Username  string    `query:"username"`
+		Email     string    `query:"email"`
+		CreatedAt time.Time `query:"created_at"`
+	}
+	// path: /user?username=sdasa,email=asdasd
+	app.Get("/user", func(c *fiber.Ctx) error {
+		u := new(UserQuery)
+
+		if err := c.QueryParser(u); err != nil {
+			return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
+		}
+
+		stmt := "SELECT * FROM users WHERE username = $1"
+
+		row := db.QueryRow(stmt, u.Username)
+		var user User
+
+		err = row.Scan(
+			&user.Username,
+			&user.Email,
+			&user.Password,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&user.DeletedAt,
+		)
+		if err != nil {
+			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+		}
+
+		return c.JSON(user)
+
+	})
+
 	app.Static("/", "./assets")
 	app.Listen(":3000")
 }
