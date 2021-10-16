@@ -151,6 +151,33 @@ func main() {
 		return c.SendString(fmt.Sprintf("user success inserted: %d", rows))
 	})
 
+	app.Put("/user", func(c *fiber.Ctx) error {
+		var u *User = new(User)
+
+		if err := c.BodyParser(u); err != nil {
+			return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
+		}
+
+		u.UpdatedAt = time.Now()
+
+		fmt.Printf("user: %+v", u)
+
+		stmt := `UPDATE users 
+			SET email = $1,
+				password = $2,
+				updated_at = $3
+			WHERE username = $4
+				`
+
+		res, err := db.Exec(stmt, u.Email, u.Password, u.UpdatedAt, u.Username)
+		if err != nil {
+			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+		}
+
+		rows, _ := res.RowsAffected()
+		return c.SendString(fmt.Sprintf("user success updated: %d", rows))
+	})
+
 	app.Static("/", "./assets")
 	app.Listen(":3000")
 }

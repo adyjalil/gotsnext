@@ -57,3 +57,10 @@ func draw(s shape) {
 func (s *square) Read(p []byte) (n int, err error) {
 	return 0, nil
 }
+
+// func getListNumber(a ...int) []int {
+// 	a = []int{}
+// 	return a
+// }
+// var b = []int{3,4,5}
+// getListNumber(b...)
