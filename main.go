@@ -179,11 +179,12 @@ func main() {
 	})
 
 	type UserQuery struct {
-		Username  string    `query:"username"`
-		Email     string    `query:"email"`
+		Username  []string  `query:"username"`
+		Email     []string  `query:"email"`
 		CreatedAt time.Time `query:"created_at"`
 	}
 	// path: /user?username=sdasa,email=asdasd
+	// username=qwe,asd -> Username = []string{"qwe", "asd"}
 	app.Get("/user", func(c *fiber.Ctx) error {
 		u := new(UserQuery)
 
@@ -191,18 +192,51 @@ func main() {
 			return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
 		}
 
-		stmt := "SELECT * FROM users WHERE username = $1"
+		stmt := "SELECT * FROM users "
+		// "abc", "def"
+		wS := []string{}
+		args := []interface{}{}
+		var paramSlice []string
 
-		rows, err := db.Query(stmt, u.Username)
+		if len(u.Username) > 0 {
+
+			for _, v := range u.Username {
+				paramSlice = append(paramSlice, fmt.Sprintf("$%d", len(paramSlice)+1)) //[]string{$1, $2}
+				args = append(args, v)
+			}
+			strParamSlice := strings.Join(paramSlice, ",") //" $1,$2"
+			whereStmt := fmt.Sprintf("WHERE username IN (%s)", strParamSlice)
+			wS = append(wS, whereStmt)
+		}
+
+		if len(u.Email) > 0 {
+
+			for _, v := range u.Email {
+				paramSlice = append(paramSlice, fmt.Sprintf("$%d", len(paramSlice)+1)) //[]string{$1, $2}
+				args = append(args, v)
+			}
+			whr := "WHERE email IN (%s)"
+			if len(u.Username) > 0 {
+				paramSlice = paramSlice[len(u.Username):]
+				whr = "email IN (%s)"
+			}
+			strParamSlice := strings.Join(paramSlice, ",") //" $1,$2"
+			whereStmt := fmt.Sprintf(whr, strParamSlice)
+			wS = append(wS, whereStmt)
+		}
+
+		where := strings.Join(wS, " AND ")
+
+		rows, err := db.Query(stmt+where, args...)
 		if err != nil {
-			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+			return c.Status(fiber.ErrInternalServerError.Code).SendString(fmt.Sprintf("%s : %s", err.Error(), stmt+where))
 		}
 		defer rows.Close()
 
-		var users []User
+		var users []*User
 
 		for rows.Next() {
-			var user User
+			var user *User = new(User)
 			rows.Scan(
 				&user.Username,
 				&user.Email,
@@ -213,8 +247,10 @@ func main() {
 			)
 			users = append(users, user)
 		}
-
-		if err != nil {
+		if len(users) < 1 {
+			return c.JSON([]*User{})
+		}
+		if err = rows.Err(); err != nil {
 			return c.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
 		}
 
