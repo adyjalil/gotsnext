@@ -212,7 +212,7 @@ func main() {
 		if len(u.Email) > 0 {
 
 			for _, v := range u.Email {
-				paramSlice = append(paramSlice, fmt.Sprintf("$%d", len(paramSlice)+1)) //[]string{$1, $2}
+				paramSlice = append(paramSlice, fmt.Sprintf("$%d", len(paramSlice)+1)) //[]string{$1, $2, $3, $4} //paramSlice[0:]
 				args = append(args, v)
 			}
 			whr := "WHERE email IN (%s)"
