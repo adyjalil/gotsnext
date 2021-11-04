@@ -4,7 +4,7 @@ CREATE TABLE "users" (
   "password" varchar(100) NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 CREATE TABLE "role" (
@@ -12,45 +12,45 @@ CREATE TABLE "role" (
   "description" varchar(100) NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 CREATE TABLE "team" (
-  "id" varchar(50) PRIMARY KEY,
+  "id" uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
   "name" varchar(50) NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 CREATE TABLE "todo" (
-  "id" varchar(50) PRIMARY KEY,
+  "id" uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
   "name" varchar(50) NOT NULL,
   "description" varchar(100) NOT NULL,
-  "start_time" timestamp NOT NULL,
-  "end_time" timestamp NOT NULL,
+  "start_time" timestamp,
+  "end_time" timestamp,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 CREATE TABLE "team_members" (
-  "id" varchar(50) PRIMARY KEY,
+  "id" uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
   "team_id" varchar(50) NOT NULL,
   "user_id" varchar(50) NOT NULL,
   "role" varchar(50) NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 CREATE TABLE "todo_actor" (
-  "id" varchar(50) PRIMARY KEY,
+  "id" uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
   "todo_id" varchar(50) NOT NULL,
   "user_id" varchar(50) NOT NULL,
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
-  "deleted_at" timestamp NOT NULL
+  "deleted_at" timestamp
 );
 
 ALTER TABLE "team_members" ADD FOREIGN KEY ("team_id") REFERENCES "team" ("id");
